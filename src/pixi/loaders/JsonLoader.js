@@ -117,16 +117,8 @@ PIXI.JsonLoader.prototype.onJSONLoaded = function () {
 				image.load();
 				
 			}
-			else if(this.json.bones)
-			{
-				// spine animation
-				var spineJsonParser = new spine.SkeletonJson();
-				var skeletonData = spineJsonParser.readSkeletonData(this.json);
-				PIXI.AnimCache[this.url] = skeletonData;
-				this.onLoaded();
-			}
+      // plepers > dragonbones spritesheets support
       else if(this.json.SubTexture){
-        // plepers > dragonbones spritesheets support
         var scope = this;
         var textureUrl = this.baseUrl + this.json.imagePath;
         var image = new PIXI.ImageLoader(textureUrl, this.crossorigin);
@@ -140,7 +132,7 @@ PIXI.JsonLoader.prototype.onJSONLoaded = function () {
 
         for (var i in frameData) {
           frame = frameData[i];
-          if (rect) {
+          if (frame) {
             PIXI.TextureCache[frame.name] = new PIXI.Texture(this.texture, {
               x: frame.x,
               y: frame.y,
@@ -152,6 +144,21 @@ PIXI.JsonLoader.prototype.onJSONLoaded = function () {
 
         image.load();
       }
+      // plepers > dragonbones animation data
+      else if(this.json.armature)
+      {
+        var skeletonData = dragonBones.objects.DataParser.parseSkeletonData(this.json);
+        PIXI.AnimCache[this.url] = skeletonData;
+        this.onLoaded();
+      }
+      else if(this.json.bones)
+      {
+				// spine animation
+				var spineJsonParser = new spine.SkeletonJson();
+				var skeletonData = spineJsonParser.readSkeletonData(this.json);
+				PIXI.AnimCache[this.url] = skeletonData;
+				this.onLoaded();
+			}
 			else
 			{
 				this.onLoaded();
