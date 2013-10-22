@@ -125,6 +125,33 @@ PIXI.JsonLoader.prototype.onJSONLoaded = function () {
 				PIXI.AnimCache[this.url] = skeletonData;
 				this.onLoaded();
 			}
+      else if(this.json.SubTexture){
+        // plepers > dragonbones spritesheets support
+        var scope = this;
+        var textureUrl = this.baseUrl + this.json.imagePath;
+        var image = new PIXI.ImageLoader(textureUrl, this.crossorigin);
+        var frameData = this.json.SubTexture;
+        var frame;
+
+        this.texture = image.texture.baseTexture;
+        image.addEventListener("loaded", function (event) {
+          scope.onLoaded();
+        });
+
+        for (var i in frameData) {
+          frame = frameData[i];
+          if (rect) {
+            PIXI.TextureCache[frame.name] = new PIXI.Texture(this.texture, {
+              x: frame.x,
+              y: frame.y,
+              width: frame.width,
+              height: frame.height
+            });
+          }
+        }
+
+        image.load();
+      }
 			else
 			{
 				this.onLoaded();
