@@ -75,7 +75,7 @@ PIXI.WebGLRenderGroup.prototype.render = function(projection)
 		renderable = this.batchs[i];
 		if(renderable instanceof PIXI.WebGLBatch)
 		{
-			this.batchs[i].render();
+      renderable.render();
 			continue;
 		}
 		
@@ -86,6 +86,10 @@ PIXI.WebGLRenderGroup.prototype.render = function(projection)
 		{
 			if(worldVisible)this.renderTilingSprite(renderable, projection);
 		}
+    else if(renderable instanceof PIXI.CustomRenderable)
+    {
+      if(worldVisible) renderable.renderWebGL(this, projection);
+    }
 		else if(renderable instanceof PIXI.Strip)
 		{
 			if(worldVisible)this.renderStrip(renderable, projection);
