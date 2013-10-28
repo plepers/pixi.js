@@ -4,7 +4,7 @@
  * Copyright (c) 2012, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2013-10-23
+ * Compiled: 2013-10-28
  *
  * Pixi.JS is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -9083,7 +9083,7 @@ spine.Bone.yDown = true;
     factorys.PixiFactory = PixiFactory;
   })(dragonBones.factorys || (dragonBones.factorys = {}));
   var factorys = dragonBones.factorys;
-})(root.dragonBones);
+})(dragonBones);
 /**
  * @author Mat Groves http://matgroves.com/ @Doormat23
  */

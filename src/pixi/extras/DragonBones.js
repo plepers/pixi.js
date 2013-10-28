@@ -153,4 +153,4 @@
     factorys.PixiFactory = PixiFactory;
   })(dragonBones.factorys || (dragonBones.factorys = {}));
   var factorys = dragonBones.factorys;
-})(root.dragonBones);
+})(dragonBones);
