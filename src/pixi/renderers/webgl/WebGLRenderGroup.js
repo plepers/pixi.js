@@ -62,8 +62,11 @@ PIXI.WebGLRenderGroup.prototype.render = function(projection)
 	
 	var gl = this.gl;
 
-	
+	gl.useProgram( PIXI.shaderProgramCt );
+	gl.uniform2f(PIXI.shaderProgramCt.projectionVector, projection.x, projection.y);
+	gl.useProgram( PIXI.shaderProgram );
 	gl.uniform2f(PIXI.shaderProgram.projectionVector, projection.x, projection.y);
+
 	gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 	
 	// will render all the elements in the group
@@ -153,6 +156,7 @@ PIXI.WebGLRenderGroup.prototype.renderSpecific = function(displayObject, project
 	var gl = this.gl;
 
 	gl.uniform2f(PIXI.shaderProgram.projectionVector, projection.x, projection.y);
+	//gl.uniform2f(PIXI.shaderProgramCt.projectionVector, projection.x, projection.y);
 
 	// to do!
 	// render part of the scene...
@@ -558,7 +562,9 @@ PIXI.WebGLRenderGroup.prototype.insertObject = function(displayObject, previousO
 			previousBatch = previousSprite.batch;
 			if(previousBatch)
 			{
-				if(previousBatch.texture == displayObject.texture.baseTexture && previousBatch.blendMode == displayObject.blendMode)
+
+
+				if(previousBatch.match(displayObject))
 				{
 					previousBatch.insertAfter(displayObject, previousSprite);
 					return;
@@ -580,13 +586,14 @@ PIXI.WebGLRenderGroup.prototype.insertObject = function(displayObject, previousO
 				//batch may not exist if item was added to the display list but not to the webGL
 				if(nextBatch)
 				{
-					if(nextBatch.texture == displayObject.texture.baseTexture && nextBatch.blendMode == displayObject.blendMode)
+          if(nextBatch.match(displayObject))
 					{
 						nextBatch.insertBefore(displayObject, nextSprite);
 						return;
 					}
 					else
 					{
+
 						if(nextBatch == previousBatch)
 						{
 							// THERE IS A SPLIT IN THIS BATCH! //

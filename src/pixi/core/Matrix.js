@@ -202,7 +202,67 @@ PIXI.mat4.create = function()
 	return matrix;
 }
 
-PIXI.mat4.transpose = function (mat, dest) 
+PIXI.mat4.isIdentity = function (mat) {
+  return !(
+      mat[0]  != 1.0 ||
+          mat[1]  != 0.0 ||
+          mat[2]  != 0.0 ||
+          mat[3]  != 0.0 ||
+          mat[4]  != 0.0 ||
+          mat[5]  != 1.0 ||
+          mat[6]  != 0.0 ||
+          mat[7]  != 0.0 ||
+          mat[8]  != 0.0 ||
+          mat[9]  != 0.0 ||
+          mat[10] != 1.0 ||
+          mat[11] != 0.0 ||
+          mat[12] != 0.0 ||
+          mat[13] != 0.0 ||
+          mat[14] != 0.0 ||
+          mat[15] != 1.0 )
+}
+
+PIXI.mat4.copyFrom = function (mat, src) {
+  mat[0]  = src[0]
+  mat[1]  = src[1]
+  mat[2]  = src[2]
+  mat[3]  = src[3]
+  mat[4]  = src[4]
+  mat[5]  = src[5]
+  mat[6]  = src[6]
+  mat[7]  = src[7]
+  mat[8]  = src[8]
+  mat[9]  = src[9]
+  mat[10] = src[10]
+  mat[11] = src[11]
+  mat[12] = src[12]
+  mat[13] = src[13]
+  mat[14] = src[14]
+  mat[15] = src[15]
+}
+
+PIXI.mat4.equal = function (mat, src) {
+  return !(
+    mat[0]  != src[0]   ||
+    mat[1]  != src[1]   ||
+    mat[2]  != src[2]   ||
+    mat[3]  != src[3]   ||
+    mat[4]  != src[4]   ||
+    mat[5]  != src[5]   ||
+    mat[6]  != src[6]   ||
+    mat[7]  != src[7]   ||
+    mat[8]  != src[8]   ||
+    mat[9]  != src[9]   ||
+    mat[10] != src[10]  ||
+    mat[11] != src[11]  ||
+    mat[12] != src[12]  ||
+    mat[13] != src[13]  ||
+    mat[14] != src[14]  ||
+    mat[15] != src[15]
+  );
+}
+
+PIXI.mat4.transpose = function (mat, dest)
 {
 	// If we are transposing ourselves we can skip a few steps but have to cache some values
 	if (!dest || mat === dest) 

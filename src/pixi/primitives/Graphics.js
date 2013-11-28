@@ -98,10 +98,8 @@ PIXI.Graphics.prototype.moveTo = function(x, y)
 {
 	if(this.currentPath.points.length == 0)this.graphicsData.pop();
 	
-	this.currentPath = this.currentPath = {lineWidth:this.lineWidth, lineColor:this.lineColor, lineAlpha:this.lineAlpha, 
-						fillColor:this.fillColor, fillAlpha:this.fillAlpha, fill:this.filling, points:[], type:PIXI.Graphics.POLY};
-	
-	this.currentPath.points.push(x, y);
+	this.currentPath = {lineWidth:this.lineWidth, lineColor:this.lineColor, lineAlpha:this.lineAlpha,
+						fillColor:this.fillColor, fillAlpha:this.fillAlpha, fill:this.filling, points:[x, y], type:PIXI.Graphics.POLY};
 	
 	this.graphicsData.push(this.currentPath);
 }

@@ -128,7 +128,13 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 {
 	if(this.contextLost)return;
 	
-	
+	// update any textures
+	PIXI.WebGLRenderer.updateTextures();
+
+	// update the scene graph
+	PIXI.visibleCount++;
+	stage.updateTransform();
+
 	// if rendering a new stage clear the batchs..
 	if(this.__stage !== stage)
 	{
@@ -137,8 +143,8 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 		this.__stage = stage;
 		this.stageRenderGroup.setRenderable(stage);
 	}
-	
-	// TODO not needed now... 
+
+	// TODO not needed now...
 	// update children if need be
 	// best to remove first!
 	/*for (var i=0; i < stage.__childrenRemoved.length; i++)
@@ -147,13 +153,7 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 		if(group)group.removeDisplayObject(stage.__childrenRemoved[i]);
 	}*/
 
-	// update any textures	
-	PIXI.WebGLRenderer.updateTextures();
-		
-	// update the scene graph	
-	PIXI.visibleCount++;
-	stage.updateTransform();
-	
+
 	var gl = this.gl;
 	
 	// -- Does this need to be set every frame? -- //

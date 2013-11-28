@@ -62,6 +62,7 @@ PIXI.WebGLBatch = function(gl)
 	this.uvBuffer =  gl.createBuffer();
 	this.colorBuffer =  gl.createBuffer();
 	this.blendMode = PIXI.blendModes.NORMAL;
+  this.colorMatrix = new PIXI.ColorMatrix()
 	this.dynamicSize = 1;
 }
 
@@ -115,12 +116,23 @@ PIXI.WebGLBatch.prototype.init = function(sprite)
 	this.dirty = true;
 	this.blendMode = sprite.blendMode;
 	this.texture = sprite.texture.baseTexture;
+	this.colorMatrix.copyFrom( sprite.concatenatedColorMatrix );
 	this.head = sprite;
 	this.tail = sprite;
 	this.size = 1;
 
 	this.growBatch();
 }
+
+PIXI.WebGLBatch.prototype.match = function(sprite){
+
+
+  return this.texture == sprite.texture.baseTexture &&
+      this.blendMode == sprite.blendMode &&
+      this.colorMatrix.equal(sprite.concatenatedColorMatrix)
+}
+
+
 
 /**
  * inserts a sprite before the specified sprite
@@ -341,7 +353,7 @@ PIXI.WebGLBatch.prototype.growBatch = function()
 	};
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
 }
 
 /**
@@ -507,6 +519,8 @@ PIXI.WebGLBatch.prototype.update = function()
 			this.verticies[index + 7] = 0;
 		}
 
+    this.colorMatrix.copyFrom( this.head.concatenatedColorMatrix );
+
 		indexRun++;
 		displayObject = displayObject.__next;
    }
@@ -536,44 +550,50 @@ PIXI.WebGLBatch.prototype.render = function(start, end)
 
 	//TODO optimize this!
 
-	var shaderProgram = PIXI.shaderProgram;
+  var hasCt = true;//! this.colorMatrix._isNull
+
+	var shaderProgram = hasCt ? PIXI.shaderProgramCt : PIXI.shaderProgram;
+
 	gl.useProgram(shaderProgram);
+
+  if( hasCt ) {
+    gl.uniformMatrix4fv( shaderProgram.colorMatrix, false, this.colorMatrix.m );
+  }
 
 	// update the verts..
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 	// ok..
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.verticies)
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
-	// update the uvs
-   	gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+  // update the uvs
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
 
-    if(this.dirtyUVS)
-    {
-    	this.dirtyUVS = false;
-    	gl.bufferSubData(gl.ARRAY_BUFFER,  0, this.uvs);
-    }
+  if(this.dirtyUVS)
+  {
+    this.dirtyUVS = false;
+    gl.bufferSubData(gl.ARRAY_BUFFER,  0, this.uvs);
+  }
 
-    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture._glTexture);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, this.texture._glTexture);
 
 	// update color!
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
 
-	if(this.dirtyColors)
-    {
-    	this.dirtyColors = false;
-    	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
+	if(this.dirtyColors) {
+    this.dirtyColors = false;
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
 	}
 
-    gl.vertexAttribPointer(shaderProgram.colorAttribute, 1, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.colorAttribute, 1, gl.FLOAT, false, 0, 0);
 
-	// dont need to upload!
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+  // dont need to upload!
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
 	var len = end - start;
 
-    // DRAW THAT this!
-    gl.drawElements(gl.TRIANGLES, len * 6, gl.UNSIGNED_SHORT, start * 2 * 6 );
+  // DRAW THAT this!
+  gl.drawElements(gl.TRIANGLES, len * 6, gl.UNSIGNED_SHORT, start * 2 * 6 );
 }

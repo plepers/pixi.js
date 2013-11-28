@@ -2,6 +2,42 @@
  * @author Mat Groves http://matgroves.com/ @Doormat23
  */
 
+
+PIXI.ColorMatrix = function(){
+
+  this.m = PIXI.mat4.create();
+  this._isNull = true;
+
+}
+
+
+
+PIXI.ColorMatrix.prototype.set = function( mat4 ){
+  PIXI.mat4.copyFrom( this.m, mat4 );
+  this._isNull = PIXI.mat4.isIdentity( this.m );
+}
+
+PIXI.ColorMatrix.prototype.multiply = function( a, b ){
+  PIXI.mat4.multiply( a, b, this.m );
+  this._isNull = PIXI.mat4.isIdentity( this.m );
+}
+
+
+PIXI.ColorMatrix.prototype.copyFrom = function(other) {
+  if( other != null )
+   this.set( other.m );
+
+}
+
+
+PIXI.ColorMatrix.prototype.equal = function(other) {
+  if( other == null )
+    return this._isNull
+
+  return PIXI.mat4.equal( this.m, other.m );
+
+}
+
 /**
  * The base class for all objects that are rendered on the screen.
  *
@@ -52,6 +88,8 @@ PIXI.DisplayObject = function()
 	 * @type Number
 	 */	
 	this.alpha = 1;
+
+  this.colorMatrix = null;
 
 	/**
 	 * The visibility of the object.
@@ -112,6 +150,10 @@ PIXI.DisplayObject = function()
 	 * @readOnly
 	 */
 	this.worldAlpha = 1;
+
+  this.concatenatedColorMatrix = null;
+
+
 
 	/**
 	 * [read-only] Whether or not the object is interactive, do not toggle directly! use the `interactive` property
@@ -507,6 +549,26 @@ PIXI.DisplayObject.prototype.updateTransform = function()
 	this.worldAlpha = this.alpha * this.parent.worldAlpha;
 	
 	this.vcount = PIXI.visibleCount;
+
+
+  var pCm = this.parent.concatenatedColorMatrix;
+  var cm = this.colorMatrix;
+  var ccm;
+
+  if( pCm == null )
+    this.concatenatedColorMatrix = this.colorMatrix;
+
+  else if (cm == null)
+    this.concatenatedColorMatrix = pCm;
+
+  else {
+    if( this.concatenatedColorMatrix == null )
+      this.concatenatedColorMatrix = PIXI.mat4.create();
+    this.concatenatedColorMatrix.multiply( cm, pCm );
+  }
+
+
+
 
 }
 

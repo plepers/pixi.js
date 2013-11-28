@@ -4,7 +4,7 @@
  * Copyright (c) 2012, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2013-10-28
+ * Compiled: 2013-11-28
  *
  * Pixi.JS is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -601,7 +601,67 @@ PIXI.mat4.create = function()
 	return matrix;
 }
 
-PIXI.mat4.transpose = function (mat, dest) 
+PIXI.mat4.isIdentity = function (mat) {
+  return !(
+      mat[0]  != 1.0 ||
+          mat[1]  != 0.0 ||
+          mat[2]  != 0.0 ||
+          mat[3]  != 0.0 ||
+          mat[4]  != 0.0 ||
+          mat[5]  != 1.0 ||
+          mat[6]  != 0.0 ||
+          mat[7]  != 0.0 ||
+          mat[8]  != 0.0 ||
+          mat[9]  != 0.0 ||
+          mat[10] != 1.0 ||
+          mat[11] != 0.0 ||
+          mat[12] != 0.0 ||
+          mat[13] != 0.0 ||
+          mat[14] != 0.0 ||
+          mat[15] != 1.0 )
+}
+
+PIXI.mat4.copyFrom = function (mat, src) {
+  mat[0]  = src[0]
+  mat[1]  = src[1]
+  mat[2]  = src[2]
+  mat[3]  = src[3]
+  mat[4]  = src[4]
+  mat[5]  = src[5]
+  mat[6]  = src[6]
+  mat[7]  = src[7]
+  mat[8]  = src[8]
+  mat[9]  = src[9]
+  mat[10] = src[10]
+  mat[11] = src[11]
+  mat[12] = src[12]
+  mat[13] = src[13]
+  mat[14] = src[14]
+  mat[15] = src[15]
+}
+
+PIXI.mat4.equal = function (mat, src) {
+  return !(
+    mat[0]  != src[0]   ||
+    mat[1]  != src[1]   ||
+    mat[2]  != src[2]   ||
+    mat[3]  != src[3]   ||
+    mat[4]  != src[4]   ||
+    mat[5]  != src[5]   ||
+    mat[6]  != src[6]   ||
+    mat[7]  != src[7]   ||
+    mat[8]  != src[8]   ||
+    mat[9]  != src[9]   ||
+    mat[10] != src[10]  ||
+    mat[11] != src[11]  ||
+    mat[12] != src[12]  ||
+    mat[13] != src[13]  ||
+    mat[14] != src[14]  ||
+    mat[15] != src[15]
+  );
+}
+
+PIXI.mat4.transpose = function (mat, dest)
 {
 	// If we are transposing ourselves we can skip a few steps but have to cache some values
 	if (!dest || mat === dest) 
@@ -695,6 +755,42 @@ PIXI.mat4.multiply = function (mat, mat2, dest)
  * @author Mat Groves http://matgroves.com/ @Doormat23
  */
 
+
+PIXI.ColorMatrix = function(){
+
+  this.m = PIXI.mat4.create();
+  this._isNull = true;
+
+}
+
+
+
+PIXI.ColorMatrix.prototype.set = function( mat4 ){
+  PIXI.mat4.copyFrom( this.m, mat4 );
+  this._isNull = PIXI.mat4.isIdentity( this.m );
+}
+
+PIXI.ColorMatrix.prototype.multiply = function( a, b ){
+  PIXI.mat4.multiply( a, b, this.m );
+  this._isNull = PIXI.mat4.isIdentity( this.m );
+}
+
+
+PIXI.ColorMatrix.prototype.copyFrom = function(other) {
+  if( other != null )
+   this.set( other.m );
+
+}
+
+
+PIXI.ColorMatrix.prototype.equal = function(other) {
+  if( other == null )
+    return this._isNull
+
+  return PIXI.mat4.equal( this.m, other.m );
+
+}
+
 /**
  * The base class for all objects that are rendered on the screen.
  *
@@ -745,6 +841,8 @@ PIXI.DisplayObject = function()
 	 * @type Number
 	 */	
 	this.alpha = 1;
+
+  this.colorMatrix = null;
 
 	/**
 	 * The visibility of the object.
@@ -805,6 +903,10 @@ PIXI.DisplayObject = function()
 	 * @readOnly
 	 */
 	this.worldAlpha = 1;
+
+  this.concatenatedColorMatrix = null;
+
+
 
 	/**
 	 * [read-only] Whether or not the object is interactive, do not toggle directly! use the `interactive` property
@@ -1200,6 +1302,26 @@ PIXI.DisplayObject.prototype.updateTransform = function()
 	this.worldAlpha = this.alpha * this.parent.worldAlpha;
 	
 	this.vcount = PIXI.visibleCount;
+
+
+  var pCm = this.parent.concatenatedColorMatrix;
+  var cm = this.colorMatrix;
+  var ccm;
+
+  if( pCm == null )
+    this.concatenatedColorMatrix = this.colorMatrix;
+
+  else if (cm == null)
+    this.concatenatedColorMatrix = pCm;
+
+  else {
+    if( this.concatenatedColorMatrix == null )
+      this.concatenatedColorMatrix = PIXI.mat4.create();
+    this.concatenatedColorMatrix.multiply( cm, pCm );
+  }
+
+
+
 
 }
 
@@ -3577,9 +3699,17 @@ PIXI.shaderFragmentSrc = [
   "varying vec2 vTextureCoord;",
   "varying float vColor;",
   "uniform sampler2D uSampler;",
+
+  "#ifdef COLOR_MATRIX",
+  "uniform mat4 uColorMatrix;",
+  "#endif",
+
   "void main(void) {",
-    "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
-    "gl_FragColor = gl_FragColor * vColor;",
+  "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
+  "gl_FragColor = gl_FragColor * vColor;",
+  "#ifdef COLOR_MATRIX",
+  "gl_FragColor = gl_FragColor * uColorMatrix;",
+  "#endif",
   "}"
 ];
 
@@ -3682,19 +3812,34 @@ PIXI.initPrimitiveShader = function()
 PIXI.initDefaultShader = function() 
 {
 	var gl = this.gl;
-	var shaderProgram = PIXI.compileProgram(PIXI.shaderVertexSrc, PIXI.shaderFragmentSrc)
-	
-    gl.useProgram(shaderProgram);
+  var shaderProgram = PIXI.compileProgram(PIXI.shaderVertexSrc, PIXI.shaderFragmentSrc)
 
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    shaderProgram.projectionVector = gl.getUniformLocation(shaderProgram, "projectionVector");
-    shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
-	shaderProgram.colorAttribute = gl.getAttribLocation(shaderProgram, "aColor");
+  gl.useProgram(shaderProgram);
 
-   // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-    shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
-    
-	PIXI.shaderProgram = shaderProgram;
+  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+  shaderProgram.projectionVector = gl.getUniformLocation(shaderProgram, "projectionVector");
+  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+  shaderProgram.colorAttribute = gl.getAttribLocation(shaderProgram, "aColor");
+  shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+
+  PIXI.shaderProgram = shaderProgram;
+
+
+  // with ColorTransform
+  fragmentShader = ["#define COLOR_MATRIX"].concat(PIXI.shaderFragmentSrc);
+  shaderProgram = PIXI.compileProgram(PIXI.shaderVertexSrc, fragmentShader)
+
+  gl.useProgram(shaderProgram);
+
+  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+  shaderProgram.projectionVector = gl.getUniformLocation(shaderProgram, "projectionVector");
+  shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+  shaderProgram.colorAttribute = gl.getAttribLocation(shaderProgram, "aColor");
+  shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+  shaderProgram.colorMatrix = gl.getUniformLocation(shaderProgram, "uColorMatrix");
+
+  PIXI.shaderProgramCt = shaderProgram;
+
 }
 
 PIXI.initDefaultStripShader = function() 
@@ -4439,7 +4584,13 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 {
 	if(this.contextLost)return;
 	
-	
+	// update any textures
+	PIXI.WebGLRenderer.updateTextures();
+
+	// update the scene graph
+	PIXI.visibleCount++;
+	stage.updateTransform();
+
 	// if rendering a new stage clear the batchs..
 	if(this.__stage !== stage)
 	{
@@ -4448,8 +4599,8 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 		this.__stage = stage;
 		this.stageRenderGroup.setRenderable(stage);
 	}
-	
-	// TODO not needed now... 
+
+	// TODO not needed now...
 	// update children if need be
 	// best to remove first!
 	/*for (var i=0; i < stage.__childrenRemoved.length; i++)
@@ -4458,13 +4609,7 @@ PIXI.WebGLRenderer.prototype.render = function(stage)
 		if(group)group.removeDisplayObject(stage.__childrenRemoved[i]);
 	}*/
 
-	// update any textures	
-	PIXI.WebGLRenderer.updateTextures();
-		
-	// update the scene graph	
-	PIXI.visibleCount++;
-	stage.updateTransform();
-	
+
 	var gl = this.gl;
 	
 	// -- Does this need to be set every frame? -- //
@@ -4722,6 +4867,7 @@ PIXI.WebGLBatch = function(gl)
 	this.uvBuffer =  gl.createBuffer();
 	this.colorBuffer =  gl.createBuffer();
 	this.blendMode = PIXI.blendModes.NORMAL;
+  this.colorMatrix = new PIXI.ColorMatrix()
 	this.dynamicSize = 1;
 }
 
@@ -4775,12 +4921,23 @@ PIXI.WebGLBatch.prototype.init = function(sprite)
 	this.dirty = true;
 	this.blendMode = sprite.blendMode;
 	this.texture = sprite.texture.baseTexture;
+	this.colorMatrix.copyFrom( sprite.concatenatedColorMatrix );
 	this.head = sprite;
 	this.tail = sprite;
 	this.size = 1;
 
 	this.growBatch();
 }
+
+PIXI.WebGLBatch.prototype.match = function(sprite){
+
+
+  return this.texture == sprite.texture.baseTexture &&
+      this.blendMode == sprite.blendMode &&
+      this.colorMatrix.equal(sprite.concatenatedColorMatrix)
+}
+
+
 
 /**
  * inserts a sprite before the specified sprite
@@ -5001,7 +5158,7 @@ PIXI.WebGLBatch.prototype.growBatch = function()
 	};
 
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
 }
 
 /**
@@ -5167,6 +5324,8 @@ PIXI.WebGLBatch.prototype.update = function()
 			this.verticies[index + 7] = 0;
 		}
 
+    this.colorMatrix.copyFrom( this.head.concatenatedColorMatrix );
+
 		indexRun++;
 		displayObject = displayObject.__next;
    }
@@ -5196,46 +5355,52 @@ PIXI.WebGLBatch.prototype.render = function(start, end)
 
 	//TODO optimize this!
 
-	var shaderProgram = PIXI.shaderProgram;
+  var hasCt = true;//! this.colorMatrix._isNull
+
+	var shaderProgram = hasCt ? PIXI.shaderProgramCt : PIXI.shaderProgram;
+
 	gl.useProgram(shaderProgram);
+
+  if( hasCt ) {
+    gl.uniformMatrix4fv( shaderProgram.colorMatrix, false, this.colorMatrix.m );
+  }
 
 	// update the verts..
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 	// ok..
 	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.verticies)
-    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
-	// update the uvs
-   	gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, 2, gl.FLOAT, false, 0, 0);
+  // update the uvs
+  gl.bindBuffer(gl.ARRAY_BUFFER, this.uvBuffer);
 
-    if(this.dirtyUVS)
-    {
-    	this.dirtyUVS = false;
-    	gl.bufferSubData(gl.ARRAY_BUFFER,  0, this.uvs);
-    }
+  if(this.dirtyUVS)
+  {
+    this.dirtyUVS = false;
+    gl.bufferSubData(gl.ARRAY_BUFFER,  0, this.uvs);
+  }
 
-    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture._glTexture);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, this.texture._glTexture);
 
 	// update color!
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
 
-	if(this.dirtyColors)
-    {
-    	this.dirtyColors = false;
-    	gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
+	if(this.dirtyColors) {
+    this.dirtyColors = false;
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colors);
 	}
 
-    gl.vertexAttribPointer(shaderProgram.colorAttribute, 1, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(shaderProgram.colorAttribute, 1, gl.FLOAT, false, 0, 0);
 
-	// dont need to upload!
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+  // dont need to upload!
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
 	var len = end - start;
 
-    // DRAW THAT this!
-    gl.drawElements(gl.TRIANGLES, len * 6, gl.UNSIGNED_SHORT, start * 2 * 6 );
+  // DRAW THAT this!
+  gl.drawElements(gl.TRIANGLES, len * 6, gl.UNSIGNED_SHORT, start * 2 * 6 );
 }
 
 /**
@@ -5302,8 +5467,11 @@ PIXI.WebGLRenderGroup.prototype.render = function(projection)
 	
 	var gl = this.gl;
 
-	
+	gl.useProgram( PIXI.shaderProgramCt );
+	gl.uniform2f(PIXI.shaderProgramCt.projectionVector, projection.x, projection.y);
+	gl.useProgram( PIXI.shaderProgram );
 	gl.uniform2f(PIXI.shaderProgram.projectionVector, projection.x, projection.y);
+
 	gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 	
 	// will render all the elements in the group
@@ -5393,6 +5561,7 @@ PIXI.WebGLRenderGroup.prototype.renderSpecific = function(displayObject, project
 	var gl = this.gl;
 
 	gl.uniform2f(PIXI.shaderProgram.projectionVector, projection.x, projection.y);
+	//gl.uniform2f(PIXI.shaderProgramCt.projectionVector, projection.x, projection.y);
 
 	// to do!
 	// render part of the scene...
@@ -5798,7 +5967,9 @@ PIXI.WebGLRenderGroup.prototype.insertObject = function(displayObject, previousO
 			previousBatch = previousSprite.batch;
 			if(previousBatch)
 			{
-				if(previousBatch.texture == displayObject.texture.baseTexture && previousBatch.blendMode == displayObject.blendMode)
+
+
+				if(previousBatch.match(displayObject))
 				{
 					previousBatch.insertAfter(displayObject, previousSprite);
 					return;
@@ -5820,13 +5991,14 @@ PIXI.WebGLRenderGroup.prototype.insertObject = function(displayObject, previousO
 				//batch may not exist if item was added to the display list but not to the webGL
 				if(nextBatch)
 				{
-					if(nextBatch.texture == displayObject.texture.baseTexture && nextBatch.blendMode == displayObject.blendMode)
+          if(nextBatch.match(displayObject))
 					{
 						nextBatch.insertBefore(displayObject, nextSprite);
 						return;
 					}
 					else
 					{
+
 						if(nextBatch == previousBatch)
 						{
 							// THERE IS A SPLIT IN THIS BATCH! //
@@ -6974,10 +7146,8 @@ PIXI.Graphics.prototype.moveTo = function(x, y)
 {
 	if(this.currentPath.points.length == 0)this.graphicsData.pop();
 	
-	this.currentPath = this.currentPath = {lineWidth:this.lineWidth, lineColor:this.lineColor, lineAlpha:this.lineAlpha, 
-						fillColor:this.fillColor, fillAlpha:this.fillAlpha, fill:this.filling, points:[], type:PIXI.Graphics.POLY};
-	
-	this.currentPath.points.push(x, y);
+	this.currentPath = {lineWidth:this.lineWidth, lineColor:this.lineColor, lineAlpha:this.lineAlpha,
+						fillColor:this.fillColor, fillAlpha:this.fillAlpha, fill:this.filling, points:[x, y], type:PIXI.Graphics.POLY};
 	
 	this.graphicsData.push(this.currentPath);
 }
