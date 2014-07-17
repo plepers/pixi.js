@@ -790,7 +790,10 @@ PIXI.WebGLRenderGroup.prototype.removeObject = function(displayObject)
 		
 		if(this.batchs[index-1] instanceof PIXI.WebGLBatch && this.batchs[index+1] instanceof PIXI.WebGLBatch)
 		{
-			if(this.batchs[index-1].texture == this.batchs[index+1].texture && this.batchs[index-1].blendMode == this.batchs[index+1].blendMode)
+			if(   this.batchs[index-1].texture == this.batchs[index+1].texture &&
+            this.batchs[index-1].blendMode == this.batchs[index+1].blendMode &&
+			      this.batchs[index-1].colorMatrix.equal( this.batchs[index+1].colorMatrix )
+         )
 			{
 				//console.log("MERGE")
 				this.batchs[index-1].merge(this.batchs[index+1]);

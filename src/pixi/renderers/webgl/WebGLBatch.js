@@ -159,6 +159,7 @@ PIXI.WebGLBatch.prototype.insertBefore = function(sprite, nextSprite)
 	else
 	{
 		this.head = sprite;
+    this.colorMatrix.copyFrom( sprite.concatenatedColorMatrix );
 	}
 }
 
@@ -216,6 +217,7 @@ PIXI.WebGLBatch.prototype.remove = function(sprite)
 	else
 	{
 		this.head = sprite.__next;
+    this.colorMatrix.copyFrom( this.head.concatenatedColorMatrix );
 		this.head.__prev = null;
 	}
 

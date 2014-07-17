@@ -10,6 +10,8 @@ PIXI.ColorMatrix = function(){
 
 }
 
+PIXI.ColorMatrix.Identity = PIXI.mat4.create();
+
 
 
 PIXI.ColorMatrix.prototype.set = function( mat4 ){
@@ -25,7 +27,9 @@ PIXI.ColorMatrix.prototype.multiply = function( a, b ){
 
 PIXI.ColorMatrix.prototype.copyFrom = function(other) {
   if( other != null )
-   this.set( other.m );
+    this.set( other.m );
+  else
+    this.set( PIXI.ColorMatrix.Identity );
 
 }
 

@@ -4,7 +4,7 @@
  * Copyright (c) 2012, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2013-11-28
+ * Compiled: 2014-07-17
  *
  * Pixi.JS is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -763,6 +763,8 @@ PIXI.ColorMatrix = function(){
 
 }
 
+PIXI.ColorMatrix.Identity = PIXI.mat4.create();
+
 
 
 PIXI.ColorMatrix.prototype.set = function( mat4 ){
@@ -778,7 +780,9 @@ PIXI.ColorMatrix.prototype.multiply = function( a, b ){
 
 PIXI.ColorMatrix.prototype.copyFrom = function(other) {
   if( other != null )
-   this.set( other.m );
+    this.set( other.m );
+  else
+    this.set( PIXI.ColorMatrix.Identity );
 
 }
 
@@ -4964,6 +4968,7 @@ PIXI.WebGLBatch.prototype.insertBefore = function(sprite, nextSprite)
 	else
 	{
 		this.head = sprite;
+    this.colorMatrix.copyFrom( sprite.concatenatedColorMatrix );
 	}
 }
 
@@ -5021,6 +5026,7 @@ PIXI.WebGLBatch.prototype.remove = function(sprite)
 	else
 	{
 		this.head = sprite.__next;
+    this.colorMatrix.copyFrom( this.head.concatenatedColorMatrix );
 		this.head.__prev = null;
 	}
 
@@ -6195,7 +6201,10 @@ PIXI.WebGLRenderGroup.prototype.removeObject = function(displayObject)
 		
 		if(this.batchs[index-1] instanceof PIXI.WebGLBatch && this.batchs[index+1] instanceof PIXI.WebGLBatch)
 		{
-			if(this.batchs[index-1].texture == this.batchs[index+1].texture && this.batchs[index-1].blendMode == this.batchs[index+1].blendMode)
+			if(   this.batchs[index-1].texture == this.batchs[index+1].texture &&
+            this.batchs[index-1].blendMode == this.batchs[index+1].blendMode &&
+			      this.batchs[index-1].colorMatrix.equal( this.batchs[index+1].colorMatrix )
+         )
 			{
 				//console.log("MERGE")
 				this.batchs[index-1].merge(this.batchs[index+1]);
