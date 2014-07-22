@@ -4,7 +4,7 @@
  * Copyright (c) 2012, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2014-07-17
+ * Compiled: 2014-07-22
  *
  * Pixi.JS is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -795,6 +795,9 @@ PIXI.ColorMatrix.prototype.equal = function(other) {
 
 }
 
+
+PIXI.ColorMatrix.Default = new PIXI.ColorMatrix();
+
 /**
  * The base class for all objects that are rendered on the screen.
  *
@@ -1320,7 +1323,7 @@ PIXI.DisplayObject.prototype.updateTransform = function()
 
   else {
     if( this.concatenatedColorMatrix == null )
-      this.concatenatedColorMatrix = PIXI.mat4.create();
+      this.concatenatedColorMatrix = new PIXI.ColorMatrix();
     this.concatenatedColorMatrix.multiply( cm, pCm );
   }
 
@@ -3698,22 +3701,31 @@ PIXI.PolyK._convex = function(ax, ay, bx, by, cx, cy, sign)
  * the default suoer fast shader!
  */
 
+PIXI.shaderCMPrePart = [
+  "#ifdef COLOR_MATRIX",
+  "uniform mat4 uColorMatrix;",
+  "#endif"
+].join('\n');
+
+PIXI.shaderCMPart = [
+  "#ifdef COLOR_MATRIX",
+  "gl_FragColor = gl_FragColor * uColorMatrix;",
+  "#endif"
+].join('\n');
+
 PIXI.shaderFragmentSrc = [
   "precision mediump float;",
   "varying vec2 vTextureCoord;",
   "varying float vColor;",
   "uniform sampler2D uSampler;",
 
-  "#ifdef COLOR_MATRIX",
-  "uniform mat4 uColorMatrix;",
-  "#endif",
+  PIXI.shaderCMPrePart,
 
   "void main(void) {",
   "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
   "gl_FragColor = gl_FragColor * vColor;",
-  "#ifdef COLOR_MATRIX",
-  "gl_FragColor = gl_FragColor * uColorMatrix;",
-  "#endif",
+
+  PIXI.shaderCMPart,
   "}"
 ];
 
@@ -3775,8 +3787,10 @@ PIXI.stripShaderVertexSrc = [
 PIXI.primitiveShaderFragmentSrc = [
   "precision mediump float;",
   "varying vec4 vColor;",
+  PIXI.shaderCMPrePart,
   "void main(void) {",
     "gl_FragColor = vColor;",
+    PIXI.shaderCMPart,
   "}"
 ];
 
@@ -3798,7 +3812,8 @@ PIXI.initPrimitiveShader = function()
 {
 	var gl = PIXI.gl;
 
-	var shaderProgram = PIXI.compileProgram(PIXI.primitiveShaderVertexSrc, PIXI.primitiveShaderFragmentSrc)
+	var shaderProgram = PIXI.compileProgram(PIXI.primitiveShaderVertexSrc,
+      ["#define COLOR_MATRIX"].concat(PIXI.primitiveShaderFragmentSrc) );
 	
     gl.useProgram(shaderProgram);
 
@@ -3809,6 +3824,7 @@ PIXI.initPrimitiveShader = function()
     shaderProgram.translationMatrix = gl.getUniformLocation(shaderProgram, "translationMatrix");
     
 	shaderProgram.alpha = gl.getUniformLocation(shaderProgram, "alpha");
+  shaderProgram.colorMatrix = gl.getUniformLocation(shaderProgram, "uColorMatrix");
 
 	PIXI.primitiveProgram = shaderProgram;
 }
@@ -4001,7 +4017,12 @@ PIXI.WebGLGraphics.renderGraphics = function(graphics, projection)
 	
 	// set the matrix transform for the 
  	gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
- 	
+
+  if( graphics.concatenatedColorMatrix )
+    gl.uniformMatrix4fv( PIXI.primitiveProgram.colorMatrix, false, graphics.concatenatedColorMatrix.m );
+ 	else
+    gl.uniformMatrix4fv( PIXI.primitiveProgram.colorMatrix, false, PIXI.ColorMatrix.Identity );
+
  	gl.uniformMatrix3fv(PIXI.primitiveProgram.translationMatrix, false, m);
  	
 	gl.uniform2f(PIXI.primitiveProgram.projectionVector, projection.x, projection.y);

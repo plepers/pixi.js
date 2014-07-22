@@ -42,6 +42,9 @@ PIXI.ColorMatrix.prototype.equal = function(other) {
 
 }
 
+
+PIXI.ColorMatrix.Default = new PIXI.ColorMatrix();
+
 /**
  * The base class for all objects that are rendered on the screen.
  *
@@ -567,7 +570,7 @@ PIXI.DisplayObject.prototype.updateTransform = function()
 
   else {
     if( this.concatenatedColorMatrix == null )
-      this.concatenatedColorMatrix = PIXI.mat4.create();
+      this.concatenatedColorMatrix = new PIXI.ColorMatrix();
     this.concatenatedColorMatrix.multiply( cm, pCm );
   }
 

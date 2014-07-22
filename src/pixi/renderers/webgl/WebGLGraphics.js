@@ -56,7 +56,12 @@ PIXI.WebGLGraphics.renderGraphics = function(graphics, projection)
 	
 	// set the matrix transform for the 
  	gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
- 	
+
+  if( graphics.concatenatedColorMatrix )
+    gl.uniformMatrix4fv( PIXI.primitiveProgram.colorMatrix, false, graphics.concatenatedColorMatrix.m );
+ 	else
+    gl.uniformMatrix4fv( PIXI.primitiveProgram.colorMatrix, false, PIXI.ColorMatrix.Identity );
+
  	gl.uniformMatrix3fv(PIXI.primitiveProgram.translationMatrix, false, m);
  	
 	gl.uniform2f(PIXI.primitiveProgram.projectionVector, projection.x, projection.y);

@@ -8,22 +8,31 @@
  * the default suoer fast shader!
  */
 
+PIXI.shaderCMPrePart = [
+  "#ifdef COLOR_MATRIX",
+  "uniform mat4 uColorMatrix;",
+  "#endif"
+].join('\n');
+
+PIXI.shaderCMPart = [
+  "#ifdef COLOR_MATRIX",
+  "gl_FragColor = gl_FragColor * uColorMatrix;",
+  "#endif"
+].join('\n');
+
 PIXI.shaderFragmentSrc = [
   "precision mediump float;",
   "varying vec2 vTextureCoord;",
   "varying float vColor;",
   "uniform sampler2D uSampler;",
 
-  "#ifdef COLOR_MATRIX",
-  "uniform mat4 uColorMatrix;",
-  "#endif",
+  PIXI.shaderCMPrePart,
 
   "void main(void) {",
   "gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.x, vTextureCoord.y));",
   "gl_FragColor = gl_FragColor * vColor;",
-  "#ifdef COLOR_MATRIX",
-  "gl_FragColor = gl_FragColor * uColorMatrix;",
-  "#endif",
+
+  PIXI.shaderCMPart,
   "}"
 ];
 
@@ -85,8 +94,10 @@ PIXI.stripShaderVertexSrc = [
 PIXI.primitiveShaderFragmentSrc = [
   "precision mediump float;",
   "varying vec4 vColor;",
+  PIXI.shaderCMPrePart,
   "void main(void) {",
     "gl_FragColor = vColor;",
+    PIXI.shaderCMPart,
   "}"
 ];
 
@@ -108,7 +119,8 @@ PIXI.initPrimitiveShader = function()
 {
 	var gl = PIXI.gl;
 
-	var shaderProgram = PIXI.compileProgram(PIXI.primitiveShaderVertexSrc, PIXI.primitiveShaderFragmentSrc)
+	var shaderProgram = PIXI.compileProgram(PIXI.primitiveShaderVertexSrc,
+      ["#define COLOR_MATRIX"].concat(PIXI.primitiveShaderFragmentSrc) );
 	
     gl.useProgram(shaderProgram);
 
@@ -119,6 +131,7 @@ PIXI.initPrimitiveShader = function()
     shaderProgram.translationMatrix = gl.getUniformLocation(shaderProgram, "translationMatrix");
     
 	shaderProgram.alpha = gl.getUniformLocation(shaderProgram, "alpha");
+  shaderProgram.colorMatrix = gl.getUniformLocation(shaderProgram, "uColorMatrix");
 
 	PIXI.primitiveProgram = shaderProgram;
 }
