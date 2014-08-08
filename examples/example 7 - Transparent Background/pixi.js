@@ -4,7 +4,7 @@
  * Copyright (c) 2012, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2014-07-22
+ * Compiled: 2014-08-08
  *
  * Pixi.JS is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -773,7 +773,7 @@ PIXI.ColorMatrix.prototype.set = function( mat4 ){
 }
 
 PIXI.ColorMatrix.prototype.multiply = function( a, b ){
-  PIXI.mat4.multiply( a, b, this.m );
+  PIXI.mat4.multiply(a.m, b.m, this.m );
   this._isNull = PIXI.mat4.isIdentity( this.m );
 }
 

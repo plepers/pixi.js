@@ -20,7 +20,7 @@ PIXI.ColorMatrix.prototype.set = function( mat4 ){
 }
 
 PIXI.ColorMatrix.prototype.multiply = function( a, b ){
-  PIXI.mat4.multiply( a, b, this.m );
+  PIXI.mat4.multiply(a.m, b.m, this.m );
   this._isNull = PIXI.mat4.isIdentity( this.m );
 }
 
